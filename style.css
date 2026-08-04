@@ -40,9 +40,9 @@ canvas {
 } 
 
 .text-block.top {
-    top: 2rem;
+    top: 4rem;
 }
 
 .text-block.bottom {
-    bottom: 2rem;
+    bottom: 0rem;
 }

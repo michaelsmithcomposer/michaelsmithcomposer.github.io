@@ -2,9 +2,7 @@ let time = 0;
 let deansgate;
 let garamond;
 let origin;
-let contours;
 let track;
-let geometry;
 
 let curve;
 let curveTarget;
@@ -12,6 +10,7 @@ let curveTarget;
 
 let bg;
 let mainColor;
+let bounds;
 
 const curveCount = 150;
 
@@ -24,6 +23,10 @@ const tracks = {
     book: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/book.wav"),
 }
 
+let textContours = {
+
+}
+
 async function setup() {
     let canvas = createCanvas(windowWidth, windowHeight);     
     origin = createVector(width / 2, height / 2);
@@ -33,16 +36,26 @@ async function setup() {
 
     deansgate = await loadFont('fonts/deansgate.ttf');
     garamond = await loadFont('fonts/EBGaramond-Regular.ttf');
-    textSize(128);
-    contours = deansgate.textToContours('MICHAEL SMITH', 30, origin.y, {sampleFactor: 0.5});
+    textSize(75);
+    textAlign(CENTER, TOP)   
+    textContours.title = deansgate.textToContours('MICHAEL SMITH', origin.x, 15, {sampleFactor: 0.5});
+
+    textAlign(CENTER, CENTER)   
+    textContours.listen = deansgate.textToContours('LISTEN:', origin.x, origin.y, {sampleFactor: 0.5});
+
+    textContours.track1 = deansgate.textToContours('TRACK NAME 1', origin.x, origin.y - 75 * 1, {sampleFactor: 0.5});
+    textContours.track2 = deansgate.textToContours('TRACK NAME 2', origin.x, origin.y - 75 * 2, {sampleFactor: 0.5});
+    textContours.track3 = deansgate.textToContours('TRACK NAME 3', origin.x, origin.y + 75 * 1, {sampleFactor: 0.5});
+    textContours.track4 = deansgate.textToContours('TRACK NAME 4', origin.x, origin.y + 75 * 2, {sampleFactor: 0.5});
+    textContours.track5 = deansgate.textToContours('TRACK NAME 5', origin.x, origin.y + 75 * 3, {sampleFactor: 0.5});
     
     track = tracks.book;
-    //track.audio.play();
+    track.audio.play();
 
     curve = Array.from({ length: curveCount }, (_, i) => createVector(width / 2, height / 2));
     curveTarget =  distributePoints(curveCount, 400, origin);
 
-    setInterval(() => { perturb(curveTarget, 5); }, 5);   
+    setInterval(() => { perturb_fft() }, 5);   
 }
 
 function draw() {
@@ -76,7 +89,17 @@ function draw() {
             curve[i + 3].x, curve[i + 3].y
         );
     }
-  
+
+    stroke(mainColor);
+    strokeWeight(1);
+    for (const [_, text] of Object.entries(textContours)) {
+        text.forEach(points => {
+            beginShape();
+            points.forEach(p => vertex(p.x, p.y));
+            endShape(CLOSE);
+        });   
+    }
+    rect(bounds);
    
     
 
@@ -145,8 +168,7 @@ function clamp_points(points) {
     }
 }
 
-function perturb(points, step) {
-    const i = floor(random(points.length - 2));
+function perturb(points, i, step) {    
     let offset;
     let next;
     while (true) {
@@ -157,6 +179,10 @@ function perturb(points, step) {
         }
     }
     points[i] = next;    
+}
+
+function perturb_fft() {    
+    perturb(curveTarget, floor(random(curveTarget.length - 2)), track.samples[0]);   
 }
 
 function on_screen(p) {
