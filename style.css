@@ -30,7 +30,7 @@ canvas {
     margin: 1rem auto;
     z-index: 1;  
      
-    color: rgb(153, 128, 147);
+    color: rgb(44, 37, 42);
     background: rgba(255, 255, 255, 0);  
     backdrop-filter: blur(4px);   
     -webkit-backdrop-filter: blur(4px);  
