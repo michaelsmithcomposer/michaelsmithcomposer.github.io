@@ -65,7 +65,7 @@ function draw() {
 
         const t = (i / (curve.length - 3));     
 
-        let c = lerpColor(bg, mainColor, 0.1 + pow(t, 5) * 0.75);
+        let c = lerpColor(bg, mainColor, constrain(pow(t, 5), 0, 0.35));
         stroke(c);
         strokeWeight(pow(t, 3) * 2);
 
