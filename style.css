@@ -46,3 +46,12 @@ canvas {
 .text-block.bottom {
     bottom: 0rem;
 }
+
+.column-container {
+  display: flex;      
+  gap: 20px;         
+}
+
+.column {
+  flex: 1;           
+}
