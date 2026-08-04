@@ -1,131 +1,30 @@
+<!DOCTYPE html>
 <html>
-    
-    <style>
-        @font-face {
-            font-family: 'EBGaramond';
-            src: url('EBGaramond-Regular.ttf') format('truetype');
-        }
-        @font-face {
-            font-family: 'EBGaramondItalic';
-            src: url('EBGaramond-Italic.ttf') format('truetype');
-        }
-        body {
-            font-family: 'EBGaramond';
-            font-size: 30
-        }
-        .subheader {
-            font-family: 'EBGaramondItalic';
-            font-size: 22
-        }
-        .paragraph {
-            font-family: 'EBGaramond';
-            font-size: 19;
-            position:relative;
-            left: 5%    
-        }
-        
-        .container {
-            position: relative;
-        }
-        #canvas {
-            position: absolute;            
-            top: 0;
-            left: 0;
-            z-index: -1;
-        }
-        #bottom-container {
-            display: flex;
-        }
-    </style>
-    <body onload="init()">      
 
-        <div class="container">
-            <div id="top-container"">
-                <div onclick="test()">Michael Smith <br> Music & Creative Programming  </div>                    
-                <div class="subheader">
-                    <div>About</div>
-                    <div class="paragraph">I'm a Sydney-based musician. 
-                        In 2024 I graduated from the Sydney Conservatorium of Music with a degree in 
-                        Composition for Creative Industries, and released my debut electronic 
-                        EP Double Sheath. With an interest in the intersection of music and technology, I programmed and assembled 
-                        an experimental hardware synthesizer, and am currently developing a software audio manipulation environment.
-                    </div><br><br><br><br>                   
-                    <div id="debug" style="left: 20%; position: absolute;">loading audio...</div>  
-                </div>    
-            </div>   
-            <div class="subheader" id="bottom-container" style="bottom: 0%; width: 55%; position:fixed;">
-                <div style="left: 0%; position:relative">
-                    <div>Listen to excerpts</div>
-                    <div class="paragraph">
-                        <div>* Experimental</div>
-                        <a href="#" class="track" id='matmo.wav' onclick="wave.loadTrack('matmo.wav')">▶ Calque<br></a>
-                        <a href="#" class="track" id='ircurs.wav'onclick="wave.loadTrack('ircurs.wav')">▶ Ircurs <i>(EP Track)</i><br></a>                        
-                        <a href="#" class="track" id='op bloom.wav' onclick="wave.loadTrack('op bloom.wav')">▶ Op Bloom <i>(EP Track)</i></a>
-                        
-                        <div>* Ambient</div>
-                        <a href="#" class="track" id='book.wav' onclick="wave.loadTrack('book.wav')">▶ Book Loop<br></a>
-                        <a href="#" class="track" id='skee2.wav' onclick="wave.loadTrack('skee2.wav')">▶ Pylon<br></a>                        
-                        <a href="#" class="track" id='parallel.wav' onclick="wave.loadTrack('parallel.wav')">▶ Parallel <br></a>
-                        <a href="#" class="track" id='crop circles.wav' onclick="wave.loadTrack('crop circles.wav')"">▶ Crop Circles<br></a>
+    <head>   
+        <title>Michael Smith</title>   
+        <link rel="stylesheet" href="style.css">
+    </head>
 
-                        
-                        <a href="#" class="track" id='synthesizedSea.wav' onclick="wave.loadTrack('synthesizedSea.wav')">▶ Synthesized Sea<br></a>                                       
-                        
-                        <a href="#" onclick="wave.stop()", style="color:brown">■ Stop<br></a>
-                    </div>
-                </div>
-                <div style="left: 15%; position:relative">
-                    <div>Works</div>
-                    <div class="paragraph">
-                        <a href="https://open.spotify.com/album/4ckd3i8QiU5YaxhcpGUgrx?si=Y2x4MZiTRiWh0hHgOL0m_Q">➚ Double Sheath (2024)<br></a>
-                        <a >* Wax Walking for the University of Houston AURA Instrumental Ensemble (2022)<br></a>
-                        <a >* Meander Cutoff for the Sydney Uni Symphony Orchestra & Synthesizer (2025)<br></a>
-                        <br>
-                    </div>
-                    <div>Programming</div>
-                    <div class="paragraph">
-                        <a href="https://michaelsnewgame.itch.io/slow-fourier-transform">➚ Slow Fourier Transform (GMTK Game Jam 2025)<br></a>
-                        <a href="https://youtu.be/cOwy4eNT78g">➚ Algal Loom (Procedural Max/MSP Artwork)<br></a>
-                        <a href="https://michaelsmithcomposer.github.io">➚ This Website!</a> <br>
-                        
-                        <input type="radio" id="totalSamplesLow" name="totalSamples" value="low">
-                        <label for="totalSamplesLow">-</label>
-                        
-                        <input type="radio" id="totalSamplesMed" name="totalSamples" value="med" checked>
-                        <label for="totalSamplesMed">=</label>
-                        
-                        <input type="radio" id="totalSamplesHi" name="totalSamples" value="hi">
-                        <label for="totalSamplesHi">+</label>
-                        <i>(scale)</i>
+    <body>      
 
-                        <input type="radio" id="resolutionLow" name="resolution" value="low">
-                        <label for="resolutionLow">-</label>
-                        
-                        <input type="radio" id="resolutionMed" name="resolution" value="med" checked>
-                        <label for="resolutionMed">=</label>  
-                        
-                        <i>(resolution)</i>
-
-                        <br>
-                       
-                        <a>* Orrery Synth: </a><a href="https://www.youtube.com/watch?v=xSMSj8Beyss">➚ Video Excerpt</a>
-                        <a href="CMPN4608_Portfolio.pdf">➚ PDF<br></a>
-                        <br>
-                    </div>              
-                    
-                    <div>Contact</div>
-                    <div class="paragraph">michaeljsmithcomposer@gmail.com</div>
-                </div>
-                
-                
-                
-            </div>                    
-                      
-        
-
-            <canvas id="canvas""></canvas>  
+        <div class="text-block top">
+            I'm a Sydney-based musician. 
+            In 2024 I graduated from the Sydney Conservatorium of Music with a degree in 
+            Composition for Creative Industries, and released my debut electronic 
+            EP Double Sheath. With an interest in the intersection of music and technology, I programmed and assembled 
+            an experimental hardware synthesizer, and am currently developing a software audio manipulation environment.
         </div>
-        
+
+         <div class="text-block bottom">
+            I'm a Sydney-based musician. 
+            In 2024 I graduated from the Sydney Conservatorium of Music with a degree in 
+            Composition for Creative Industries, and released my debut electronic 
+            EP Double Sheath. With an interest in the intersection of music and technology, I programmed and assembled 
+            an experimental hardware synthesizer, and am currently developing a software audio manipulation environment.
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/p5@2.3.1/lib/p5.min.js"></script>
         <script src="script.js"></script>
     </body>
 
