@@ -112,20 +112,22 @@ function layout() {
     let info = layoutLabel(labels.title, origin.x - cardWidth() / 2, 10, cardWidth(), 999);       
     topText.style.top = `${info.y + info.h}px`;
 
-    const areaTop = topText.getBoundingClientRect().bottom;
+    
+   
+
+    info = layoutLabel(labels.listen, origin.x - cardWidth() / 2, topText.getBoundingClientRect().bottom + gap, cardWidth() / 2, 999);    
+    
+    const areaTop = info.y + info.h + gap;
     const areaBottom = bottomText.getBoundingClientRect().top;   
+    const rowH = (areaBottom - areaTop) / trackCount;
 
-    info = layoutLabel(labels.listen, origin.x - cardWidth() / 2, areaTop + gap, cardWidth() / 2, 999);    
-
-    const rowH = (areaBottom - (info.y + info.h + gap * trackCount)) / trackCount;
-
-    info = layoutLabel(labels.crop_circles, origin.x - cardWidth() / 2, info.y + info.h + gap, cardWidth(), rowH);
-    info = layoutLabel(labels.track1, origin.x - cardWidth() / 2, info.y + info.h + gap, cardWidth(), rowH);
-    info = layoutLabel(labels.track2, origin.x - cardWidth() / 2, info.y + info.h + gap, cardWidth(), rowH);
-    info = layoutLabel(labels.track3, origin.x - cardWidth() / 2, info.y + info.h + gap, cardWidth(), rowH);
-    info = layoutLabel(labels.track4, origin.x - cardWidth() / 2, info.y + info.h + gap, cardWidth(), rowH);
-    info = layoutLabel(labels.track5, origin.x - cardWidth() / 2, info.y + info.h + gap, cardWidth(), rowH);
-    info = layoutLabel(labels.track6, origin.x - cardWidth() / 2, info.y + info.h + gap, cardWidth(), rowH);
+    info = layoutLabel(labels.crop_circles, origin.x - cardWidth() / 2, areaTop + (rowH) * 0, cardWidth(), rowH - gap);
+    info = layoutLabel(labels.track1, origin.x - cardWidth() / 2, areaTop + (rowH) * 1, cardWidth(), rowH - gap);
+    info = layoutLabel(labels.track2, origin.x - cardWidth() / 2, areaTop + (rowH) * 2, cardWidth(), rowH - gap);
+    info = layoutLabel(labels.track3, origin.x - cardWidth() / 2, areaTop + (rowH) * 3, cardWidth(), rowH - gap);
+    info = layoutLabel(labels.track4, origin.x - cardWidth() / 2, areaTop + (rowH) * 4, cardWidth(), rowH - gap);
+    info = layoutLabel(labels.track5, origin.x - cardWidth() / 2, areaTop + (rowH) * 5, cardWidth(), rowH - gap);
+    info = layoutLabel(labels.track6, origin.x - cardWidth() / 2, areaTop + (rowH) * 6, cardWidth(), rowH - gap);
 
     waveEnd = createVector(labels.listen.x + labels.listen.w + wavePad, labels.listen.y + labels.listen.h / 2);
     waveStart = createVector(waveEnd.x + cardWidth() / 2 - wavePad, waveEnd.y);
