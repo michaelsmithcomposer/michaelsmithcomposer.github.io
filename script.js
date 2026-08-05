@@ -218,38 +218,38 @@ function draw() {
         endShape();
     } else {
         line(waveStart.x, waveStart.y, waveEnd.x, waveEnd.y);
-    }
-  
-    
-    
+    }   
    
     
 
 }
 
-function mouseClicked() {   
+async function mouseClicked() {   
     curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
-    Object.entries(labels).forEach(([_, label], i) => {   
+    for (const [_, label] of Object.entries(labels)) {
         if (label.focus) {
             if (audioContext.state === 'suspended') {
-                audioContext.resume();
+                await audioContext.resume();
             }
             if (playing) {
                 track.audio.pause();
                 track.audio.currentTime = 0;
-            }          
+            }
 
             if (track != label.track) {
                 track = label.track;
-                track.audio.play();
-                playing = true;
+                try {
+                    await track.audio.play();
+                    playing = true;
+                } catch (err) {
+                    console.error('play failed:', err);
+                }
             } else {
                 playing = false;
                 track = null;
             }
-           
-        }       
-    });
+        }
+    }
 }
 
 function windowResized() {    
