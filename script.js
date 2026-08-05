@@ -45,13 +45,13 @@ let titles = {
 }
 
 let labels = {    
-    crop_circles: {text: 'CROP CIRCLES', track: tracks.crop},
-    track1: {text: 'SKEE MASK', track: tracks.skee},
+    track5: {text: 'IMPULSE RESPONSE', track: tracks.matmo},   
+    track0: {text: 'CROP CIRCLES', track: tracks.crop},
     track2: {text: 'WAX WALKING', track: tracks.wax},
-    track3: {text: 'SYNTHESIZED SEA', track: tracks.sea},
-    track4: {text: 'BOOK SONG', track: tracks.book},
-    track5: {text: 'MATMO', track: tracks.matmo},
-    track6: {text: 'SPARKLER SAMPLE', track: tracks.spark},
+    track3: {text: 'SYNTHESIZED SEA', track: tracks.sea},   
+    track6: {text: 'CLOUD TANK', track: tracks.spark},
+    track4: {text: 'BOOKMUSIC', track: tracks.book},
+    track1: {text: 'PHYSICAL MEMORY', track: tracks.skee},
 }
 
 function layoutLabel(label, x, y, w, h) {    
@@ -113,7 +113,7 @@ async function setup() {
 
     backgroundColor = color(252, 248, 240);
     mainColor = color(153, 128, 147);     
-    highlightColor = color(184, 109, 161);     
+    highlightColor = color(148, 95, 160);     
     distanceColor = lerpColor(backgroundColor, mainColor, 0.25);
 
     deansgate = await loadFont('fonts/deansgate.ttf');
@@ -153,7 +153,7 @@ function layout() {
 
     waveEnd = createVector(titles.listen.x + titles.listen.w + wavePad, titles.listen.y + titles.listen.h / 2);
     waveStart = createVector(waveEnd.x + cardWidth() / 2 - wavePad * 3, waveEnd.y);
-    waveAmplitude = titles.listen.h / 2;
+    waveAmplitude = titles.listen.h;
 }
 
 function draw() {
@@ -212,9 +212,10 @@ function draw() {
    
     if (playing) {
         beginShape();
-        for (let i = 0; i < track.samples.length; i++) {
-            const t = i / track.samples.length;
-            vertex(lerp(waveStart.x, waveEnd.x, t), waveStart.y + map(track.samples[i], 0, 255, -waveAmplitude, waveAmplitude) * pow(t, 0.5));
+        for (let i = 0; i < 500; i++) {
+            const t = i / 500;
+            const s = floor(map(i, 0, 500, 0, track.samples.length));
+            vertex(lerp(waveStart.x, waveEnd.x, t), waveStart.y + map(track.samples[s], 0, 255, -waveAmplitude, waveAmplitude) * pow(t, 0.5));
         }
         endShape();
     } else {
@@ -240,9 +241,15 @@ function mouseClicked() {
                 track.audio.currentTime = 0;
             }          
 
-            track = label.track;
-            track.audio.play();
-            playing = true;
+            if (track != label.track) {
+                track = label.track;
+                track.audio.play();
+                playing = true;
+            } else {
+                playing = false;
+                track = null;
+            }
+           
         }       
     });
 }
