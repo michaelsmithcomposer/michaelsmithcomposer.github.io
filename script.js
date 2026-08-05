@@ -11,6 +11,7 @@ let curveTarget;
 let backgroundColor;
 let mainColor;
 let highlightColor;
+let distanceColor;
 
 let waveEnd;
 let waveStart;
@@ -18,7 +19,7 @@ let waveAmplitude;
 
 let playing = false;
 
-const bgCurveCount = 150;
+const bgCurveCount = 200;
 const fgCurveCount = 20;
 
 const trackCount = 7;
@@ -74,7 +75,7 @@ function drawLabel(label, color, weight, reactive, amp, fft_amp, fft_angle) {
     label.paths.forEach(points => {
         beginShape();
         points.forEach(p => {
-            if (reactive) {
+            if (reactive && playing) {
                 const a = map(track.samples[constrain(floor(map(p.x, 0, width * 2, 0, track.samples.length)), 0, track.samples.length)], 0, 255, -amp, amp);
                 const fft_a = map(track.fft[constrain(floor(map(p.y, 0, height, 0, track.fft.length)), 0, track.fft.length)], 0, 255, -fft_amp, fft_amp);
                 const ox = cos(p.alpha - HALF_PI) * a + cos(fft_angle) * fft_a;
@@ -108,14 +109,12 @@ async function setup() {
     backgroundColor = color(252, 248, 240);
     mainColor = color(153, 128, 147);     
     highlightColor = color(184, 109, 161);     
+    distanceColor = lerpColor(backgroundColor, mainColor, 0.25);
 
     deansgate = await loadFont('fonts/deansgate.ttf');
     garamond = await loadFont('fonts/EBGaramond-Regular.ttf');
 
-    layout();    
-
-    track = tracks.crop;
-    track.audio.play();
+    layout();       
 
     curveTarget =  distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
     curve = [...curveTarget];
@@ -155,8 +154,11 @@ function layout() {
 function draw() {
     time += deltaTime;    
 
-    track.analyser.getByteTimeDomainData(track.samples);
-    track.analyser.getByteFrequencyData(track.fft);    
+    if (playing) {
+        track.analyser.getByteTimeDomainData(track.samples);
+        track.analyser.getByteFrequencyData(track.fft);  
+    }
+   
 
     background(backgroundColor);      
          
@@ -172,7 +174,12 @@ function draw() {
 
         const t = (i / (curve.length - 3));     
 
-        let c = lerpColor(backgroundColor, mainColor, constrain(pow(t, 5), 0, 0.35));
+        let c = distanceColor;
+
+        if (t > 0.75) {
+            c = lerpColor(backgroundColor, mainColor, pow(map(t, 0.75, 1, 0, 0.75), 2));
+        }
+        
         stroke(c);
         strokeWeight(pow(t, 3) * 2);
 
@@ -197,12 +204,18 @@ function draw() {
 
     stroke(mainColor)
     strokeWeight(1);    
-    beginShape();
-    for (let i = 0; i < track.samples.length; i++) {
-        const t = i / track.samples.length;
-        vertex(lerp(waveStart.x, waveEnd.x, t), waveStart.y + map(track.samples[i], 0, 255, -waveAmplitude, waveAmplitude) * pow(t, 0.5));
+   
+    if (playing) {
+        beginShape();
+        for (let i = 0; i < track.samples.length; i++) {
+            const t = i / track.samples.length;
+            vertex(lerp(waveStart.x, waveEnd.x, t), waveStart.y + map(track.samples[i], 0, 255, -waveAmplitude, waveAmplitude) * pow(t, 0.5));
+        }
+        endShape();
+    } else {
+        line(waveStart.x, waveStart.y, waveEnd.x, waveEnd.y);
     }
-    endShape();
+  
     
     
    
@@ -214,8 +227,10 @@ function mouseClicked() {
     curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
     Object.entries(labels).forEach(([_, label], i) => {   
         if (label.focus) {
-            track.audio.pause();
-            track.audio.currentTime = 0;
+            if (playing) {
+                track.audio.pause();
+                track.audio.currentTime = 0;
+            }          
 
             track = label.track;
             track.audio.play();
@@ -271,6 +286,8 @@ function distributePoints(bgCount, fgCount, step, end) {
             next = p5.Vector.add(last, offset);      
             c++;     
             if (on_screen(next) || c > 100) {
+                next.x = constrain(next.x, 0, width);
+                next.y = constrain(next.y, 0, height);
                 break;
             }
         }         
@@ -288,7 +305,9 @@ function distributePoints(bgCount, fgCount, step, end) {
             offset = createVector(random(-step, step), random(-step, step));
             next = p5.Vector.add(last, offset);  
             c++;         
-            if (in_rect(next, origin.x - cardWidth() / 2, 0, cardWidth(), height) || c > 100) {
+            if (in_rect(next, origin.x - cardWidth() / 2, 0, cardWidth(), height) || c > 100) {              
+                next.x = constrain(next.x, origin.x - cardWidth() / 2, origin.x + cardWidth() / 2);
+                next.y = constrain(next.y, 0, height);
                 break;
             }
         }         
