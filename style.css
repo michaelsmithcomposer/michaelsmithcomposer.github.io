@@ -26,6 +26,7 @@ canvas {
     min-height: 100dvh;
     cursor: pointer;      
     touch-action: none;
+    user-select: none;
     z-index: 0; 
 }
 

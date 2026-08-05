@@ -234,11 +234,8 @@ function setLabelFocus(label) {
     label.focus = in_rect(createVector(mouseX, mouseY), label.x, label.y, label.w, label.h);   
 }
 
-function mouseClicked() {
-    handleInput();
-}
 
-async function handleInput() {   
+async function mouseClicked() {   
     if (handlingClick) return;
     handlingClick = true;
 
@@ -291,9 +288,8 @@ function syncCanvas() {
     origin.x = width / 2;
     origin.y = height / 2;
 
-    const canvas = document.querySelector('canvas');
-    const offset = isIOS() ? 20 : 0;
-    canvas.style.top = vv.offsetTop - offset + 'px';
+    const canvas = document.querySelector('canvas');    
+    canvas.style.top = vv.offsetTop + 'px';
     canvas.style.left = vv.offsetLeft + 'px';
 
     console.log("sync");
