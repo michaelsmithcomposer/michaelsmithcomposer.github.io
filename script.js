@@ -32,6 +32,11 @@ const tracks = {
     skee: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/skee2.wav"),
     crop: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/crop%20circles.wav"),
     book: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/book.wav"),
+    wax: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/waxWalkingHighlights.wav"),
+    sea: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/synthesizedSea.wav"),
+    ircurs: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/ircurs.wav"),
+    bloom: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/op%20bloom.wav"),
+    spark: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/spark.wav"),
 }
 
 let titles = {
@@ -41,12 +46,12 @@ let titles = {
 
 let labels = {    
     crop_circles: {text: 'CROP CIRCLES', track: tracks.crop},
-    track1: {text: 'TRACK TITLE 1', track: tracks.skee},
-    track2: {text: 'TRACK TITLE 2', track: tracks.skee},
-    track3: {text: 'SYNTHESIZED SEA', track: tracks.book},
-    track4: {text: 'TRACK TITLE 4', track: tracks.skee},
-    track5: {text: 'TRACK TITLE 5', track: tracks.skee},
-    track6: {text: 'TRACK TITLE 6', track: tracks.skee},
+    track1: {text: 'SKEE MASK', track: tracks.skee},
+    track2: {text: 'WAX WALKING', track: tracks.wax},
+    track3: {text: 'SYNTHESIZED SEA', track: tracks.sea},
+    track4: {text: 'BOOK SONG', track: tracks.book},
+    track5: {text: 'MATMO', track: tracks.matmo},
+    track6: {text: 'SPARKLER SAMPLE', track: tracks.spark},
 }
 
 function layoutLabel(label, x, y, w, h) {    
@@ -227,6 +232,9 @@ function mouseClicked() {
     curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
     Object.entries(labels).forEach(([_, label], i) => {   
         if (label.focus) {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
             if (playing) {
                 track.audio.pause();
                 track.audio.currentTime = 0;
