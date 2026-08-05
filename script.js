@@ -84,7 +84,7 @@ function drawLabel(label, color, weight, reactive, amp, fft_amp, fft_angle) {
         points.forEach(p => {
             if (reactive && playing) {
                 const a = map(track.samples[constrain(floor(map(p.x, 0, width * 2.5, 0, track.samples.length)), 0, track.samples.length)], 0, 255, -amp, amp);
-                const fft_a = map(track.fft[constrain(floor(map(p.y, 0, height, 0, track.fft.length)), 0, track.fft.length)], 0, 255, -fft_amp, fft_amp);
+                const fft_a = map(track.fft[constrain(floor(map(p.y, 0, height, 0, track.fft.length)), 0, track.fft.length)], 0, 255, 0, fft_amp);
                 const ox = cos(p.alpha - HALF_PI) * a + cos(fft_angle) * fft_a;
                 const oy = sin(p.alpha - HALF_PI) * a + sin(fft_angle) * fft_a;                            
                 vertex(p.x + ox, p.y + oy);
@@ -200,15 +200,15 @@ function draw() {
         );
     }
 
-    drawLabel(titles.name, mainColor, 1, true, 5, 10, HALF_PI);
-    drawLabel(titles.listen, mainColor, 1, true, 5, 10, PI);
+    drawLabel(titles.name, mainColor, 1, true, 5, 20, HALF_PI);
+    drawLabel(titles.listen, mainColor, 1, true, 5, 20, PI);
 
     Object.entries(labels).forEach(([_, label], i) => {   
         setLabelFocus(label);
         const playing = track == label.track;
         const color = (label.focus || playing) ? highlightColor : mainColor;
         const weight = (label.focus || playing) ? 2 : 1;
-        drawLabel(label, color, weight, playing, 10, 10, -PI / 4);        
+        drawLabel(label, color, weight, playing, 10, 20, -PI / 4);        
     });     
 
     stroke(mainColor)

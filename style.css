@@ -25,7 +25,7 @@ canvas {
     min-height: 100vh;  
     min-height: 100dvh;
     cursor: pointer;      
-    touch-action: manipulation;
+    touch-action: none;
     z-index: 0; 
 }
 
@@ -39,6 +39,7 @@ a:visited {
 
 .text-block {    
     position: fixed;   
+    font-size: 1rem;
     left: 50%;
     transform: translateX(-50%);          
     width: 90%;       
@@ -55,6 +56,12 @@ a:visited {
     padding: 1rem;     
                    
 } 
+
+@media (max-width: 600px) {
+  .text-block {
+    font-size: 0.67rem;
+  }
+}
 
 .text-block.top {
     top: 4rem;
