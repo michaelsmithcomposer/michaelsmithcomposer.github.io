@@ -7,6 +7,11 @@
     src: url('fonts/EBGaramond-Italic.ttf') format('truetype');
 }
 
+:root {
+    --background-color: #FFFFFF;
+    --main-color: #7a6f6f;
+    --highlight-color: rgb(184, 109, 161);
+}
 
 body { 
     font-family:'EBGaramond';    
@@ -20,15 +25,23 @@ canvas {
     z-index: 0; 
 }
 
+a:link {
+    color:var(--highlight-color);
+}
+
+a:visited {
+    color:var(--highlight-color);
+}
+
 .text-block {    
     position: fixed;   
     left: 50%;
     transform: translateX(-50%);          
     width: 90%;       
     max-width: 32rem;    
-    margin: 1rem auto;
+    margin: 0rem auto;
     z-index: 1;  
-     
+    
     color: rgb(44, 37, 42);
     background: rgba(255, 255, 255, 0);  
     backdrop-filter: blur(4px);   
@@ -44,7 +57,7 @@ canvas {
 }
 
 .text-block.bottom {
-    bottom: 0rem;
+    bottom: 1rem;
 }
 
 .column-container {

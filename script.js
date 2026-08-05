@@ -8,15 +8,19 @@ let curve;
 let curveTarget;
 
 
-let bg;
+let backgroundColor;
 let mainColor;
-let bounds;
+let highlightColor;
 
 let waveEnd;
 let waveStart;
 let waveAmplitude;
 
-const curveCount = 150;
+let playing = false;
+
+const bgCurveCount = 150;
+const fgCurveCount = 20;
+
 const trackCount = 7;
 const wavePad = 15;  
 
@@ -29,49 +33,67 @@ const tracks = {
     book: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/book.wav"),
 }
 
-let labels = {
-    title: {text: 'MICHAEL SMITH'},
+let titles = {
+    name: {text: 'MICHAEL SMITH'},
     listen: {text: 'LISTEN:'},
-    crop_circles: {text: 'CROP CIRCLES'},
-    track1: {text: 'TRACK TITLE 1'},
-    track2: {text: 'TRACK TITLE 2'},
-    track3: {text: 'SYNTHESIZED SEA'},
-    track4: {text: 'TRACK TITLE 4'},
-    track5: {text: 'TRACK TITLE 5'},
-    track6: {text: 'TRACK TITLE 6'},
+}
+
+let labels = {    
+    crop_circles: {text: 'CROP CIRCLES', track: tracks.crop},
+    track1: {text: 'TRACK TITLE 1', track: tracks.skee},
+    track2: {text: 'TRACK TITLE 2', track: tracks.skee},
+    track3: {text: 'SYNTHESIZED SEA', track: tracks.book},
+    track4: {text: 'TRACK TITLE 4', track: tracks.skee},
+    track5: {text: 'TRACK TITLE 5', track: tracks.skee},
+    track6: {text: 'TRACK TITLE 6', track: tracks.skee},
 }
 
 function layoutLabel(label, x, y, w, h) {    
     textSize(100);
     textAlign(LEFT, TOP)   
-    label.paths = deansgate.textToContours(label.text, 0, 0, {sampleFactor: 0.5});
+    label.paths = deansgate.textToContours(label.text, 0, 0, {sampleFactor: 0.25});
     const size = getLabelSize(deansgate, label.text, w, h);
+    const ox = x + (w - size.w) / 2;
+    const oy = (h != null) ? y + (h - size.h) / 2 : y;
+
     label.scale = size.scale;
-    label.x = x;
-    label.y = y;
+    label.x = ox;
+    label.y = oy;
     label.w = size.w;
     label.h = size.h;
-    return {x: x, y: y, w: size.w, h: size.h};
+
+    return {x: ox, y: oy, w: size.w, h: size.h};
 }
 
-function drawLabel(label, color) {
+function drawLabel(label, color, weight, reactive, amp, fft_amp, fft_angle) {
     push();
     translate(label.x, label.y);
     scale(label.scale);
     stroke(color);
-    strokeWeight(1 / label.scale);
+    strokeWeight(weight / label.scale);
     label.paths.forEach(points => {
         beginShape();
-        points.forEach(p => vertex(p.x, p.y));
+        points.forEach(p => {
+            if (reactive) {
+                const a = map(track.samples[constrain(floor(map(p.x, 0, width * 2, 0, track.samples.length)), 0, track.samples.length)], 0, 255, -amp, amp);
+                const fft_a = map(track.fft[constrain(floor(map(p.y, 0, height, 0, track.fft.length)), 0, track.fft.length)], 0, 255, -fft_amp, fft_amp);
+                const ox = cos(p.alpha - HALF_PI) * a + cos(fft_angle) * fft_a;
+                const oy = sin(p.alpha - HALF_PI) * a + sin(fft_angle) * fft_a;                            
+                vertex(p.x + ox, p.y + oy);
+            } else {
+                vertex(p.x, p.y)
+            }
+           
+        });
         endShape(CLOSE);
     }); 
     pop();
 }
 
-function getLabelSize(font, text, w, h) {
+function getLabelSize(font, text, w, h = 999) {
     textFont(font);
     textAlign(LEFT, TOP);
-    textSize(100);
+    textSize(100);    
     const size = textBounds(text, 0, 0);
     const scale_w = w / size.w;
     const scale_h = h / size.h;
@@ -79,28 +101,26 @@ function getLabelSize(font, text, w, h) {
     return { scale: scale, w: size.w * scale, h: size.h * scale };
 }
 
-
 async function setup() {
     let canvas = createCanvas(windowWidth, windowHeight);     
     origin = createVector(width / 2, height / 2);
 
-    bg = color(252, 248, 240);
-    mainColor = color(153, 128, 147); 
+    backgroundColor = color(252, 248, 240);
+    mainColor = color(153, 128, 147);     
+    highlightColor = color(184, 109, 161);     
 
     deansgate = await loadFont('fonts/deansgate.ttf');
     garamond = await loadFont('fonts/EBGaramond-Regular.ttf');
 
-    layout();
-    
+    layout();    
+
     track = tracks.crop;
     track.audio.play();
 
-    
-    curveTarget =  distributePoints(curveCount, 400, waveStart);
+    curveTarget =  distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
     curve = [...curveTarget];
 
-    setInterval(() => { perturb_fft() }, 5);   
-
+    setInterval(() => { perturb(curveTarget, floor(random(curveTarget.length - 3)), 50); }, 5);   
     
 }
 
@@ -109,29 +129,27 @@ function layout() {
     const topText = document.querySelector('.text-block.top'); 
     const bottomText = document.querySelector('.text-block.bottom'); 
 
-    let info = layoutLabel(labels.title, origin.x - cardWidth() / 2, 10, cardWidth(), 999);       
-    topText.style.top = `${info.y + info.h}px`;
+    let info = layoutLabel(titles.name, origin.x - cardWidth() / 2, 15, cardWidth());       
+    topText.style.top = `${info.y + info.h + gap}px`;   
 
-    
-   
-
-    info = layoutLabel(labels.listen, origin.x - cardWidth() / 2, topText.getBoundingClientRect().bottom + gap, cardWidth() / 2, 999);    
+    info = layoutLabel(
+        titles.listen, 
+        origin.x - cardWidth() / 2, 
+        topText.getBoundingClientRect().bottom + gap, 
+        cardWidth() / 2
+    );    
     
     const areaTop = info.y + info.h + gap;
     const areaBottom = bottomText.getBoundingClientRect().top;   
     const rowH = (areaBottom - areaTop) / trackCount;
 
-    info = layoutLabel(labels.crop_circles, origin.x - cardWidth() / 2, areaTop + (rowH) * 0, cardWidth(), rowH - gap);
-    info = layoutLabel(labels.track1, origin.x - cardWidth() / 2, areaTop + (rowH) * 1, cardWidth(), rowH - gap);
-    info = layoutLabel(labels.track2, origin.x - cardWidth() / 2, areaTop + (rowH) * 2, cardWidth(), rowH - gap);
-    info = layoutLabel(labels.track3, origin.x - cardWidth() / 2, areaTop + (rowH) * 3, cardWidth(), rowH - gap);
-    info = layoutLabel(labels.track4, origin.x - cardWidth() / 2, areaTop + (rowH) * 4, cardWidth(), rowH - gap);
-    info = layoutLabel(labels.track5, origin.x - cardWidth() / 2, areaTop + (rowH) * 5, cardWidth(), rowH - gap);
-    info = layoutLabel(labels.track6, origin.x - cardWidth() / 2, areaTop + (rowH) * 6, cardWidth(), rowH - gap);
+    Object.entries(labels).forEach(([_, label], i) => {       
+        layoutLabel(label, origin.x - cardWidth() / 2, areaTop + (rowH) * i, cardWidth(), rowH - gap);
+    });       
 
-    waveEnd = createVector(labels.listen.x + labels.listen.w + wavePad, labels.listen.y + labels.listen.h / 2);
-    waveStart = createVector(waveEnd.x + cardWidth() / 2 - wavePad, waveEnd.y);
-    waveAmplitude = labels.listen.h / 2;
+    waveEnd = createVector(titles.listen.x + titles.listen.w + wavePad, titles.listen.y + titles.listen.h / 2);
+    waveStart = createVector(waveEnd.x + cardWidth() / 2 - wavePad * 3, waveEnd.y);
+    waveAmplitude = titles.listen.h / 2;
 }
 
 function draw() {
@@ -140,7 +158,7 @@ function draw() {
     track.analyser.getByteTimeDomainData(track.samples);
     track.analyser.getByteFrequencyData(track.fft);    
 
-    background(bg);      
+    background(backgroundColor);      
          
     noFill();    
 
@@ -154,7 +172,7 @@ function draw() {
 
         const t = (i / (curve.length - 3));     
 
-        let c = lerpColor(bg, mainColor, constrain(pow(t, 5), 0, 0.35));
+        let c = lerpColor(backgroundColor, mainColor, constrain(pow(t, 5), 0, 0.35));
         stroke(c);
         strokeWeight(pow(t, 3) * 2);
 
@@ -166,16 +184,16 @@ function draw() {
         );
     }
 
-    drawLabel(labels.title, mainColor);
-    drawLabel(labels.listen, mainColor);
-    drawLabel(labels.crop_circles, mainColor);
-    
-    drawLabel(labels.track1, mainColor);
-    drawLabel(labels.track2, mainColor);
-    drawLabel(labels.track3, mainColor);
-    drawLabel(labels.track4, mainColor);
-    drawLabel(labels.track5, mainColor);
-    drawLabel(labels.track6, mainColor);    
+    drawLabel(titles.name, mainColor, 1, true, 5, 10, HALF_PI);
+    drawLabel(titles.listen, mainColor, 1, true, 5, 10, PI);
+
+    Object.entries(labels).forEach(([_, label], i) => {   
+        label.focus = in_rect(createVector(mouseX, mouseY), label.x, label.y, label.w, label.h);   
+        const playing = track == label.track;
+        const color = (label.focus || playing) ? highlightColor : mainColor;
+        const weight = (label.focus || playing) ? 2 : 1;
+        drawLabel(label, color, weight, playing, 6, 10, -PI / 4);        
+    });     
 
     stroke(mainColor)
     strokeWeight(1);    
@@ -193,14 +211,24 @@ function draw() {
 }
 
 function mouseClicked() {   
-    curveTarget = distributePoints(curveCount, 400, waveStart);
+    curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
+    Object.entries(labels).forEach(([_, label], i) => {   
+        if (label.focus) {
+            track.audio.pause();
+            track.audio.currentTime = 0;
+
+            track = label.track;
+            track.audio.play();
+            playing = true;
+        }       
+    });
 }
 
 function windowResized() {    
     resizeCanvas(windowWidth, windowHeight);
     origin.x = width / 2;
     origin.y = height / 2;
-    curveTarget = distributePoints(curveCount, 400, waveStart);
+    curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
     layout();
 }
 
@@ -230,17 +258,37 @@ function setupAudio(url) {
     };
 }
 
-function distributePoints(n, step, end) {  
+function distributePoints(bgCount, fgCount, step, end) {  
     let last = origin;
     let points = [];
 
-    for (let i = 0; i < n - 3; i++) {
+    for (let i = 0; i < bgCount - 1; i++) {
         let offset;
         let next;
+        let c = 0;
         while (true) {
             offset = createVector(random(-step, step), random(-step, step));
-            next = p5.Vector.add(last, offset);           
-            if (on_screen(next)) {
+            next = p5.Vector.add(last, offset);      
+            c++;     
+            if (on_screen(next) || c > 100) {
+                break;
+            }
+        }         
+        points.push(next);
+        last = next;
+    }
+
+    points.push(createVector(origin.x, origin.y));
+
+    for (let i = 0; i < fgCount - 3; i++) {
+        let offset;
+        let next;
+        let c = 0;
+        while (true) {
+            offset = createVector(random(-step, step), random(-step, step));
+            next = p5.Vector.add(last, offset);  
+            c++;         
+            if (in_rect(next, origin.x - cardWidth() / 2, 0, cardWidth(), height) || c > 100) {
                 break;
             }
         }         
@@ -250,8 +298,7 @@ function distributePoints(n, step, end) {
 
     points.push(createVector(end.x + 50, end.y));
     points.push(end);
-    points.push(end);
-    
+    points.push(end);    
 
     return points;
 }
@@ -276,10 +323,12 @@ function perturb(points, i, step) {
     points[i] = next;    
 }
 
-function perturb_fft() {    
-    perturb(curveTarget, floor(random(curveTarget.length - 3)), track.samples[0] / 5);   
-}
+
 
 function on_screen(p) {
     return (p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height);
+}
+
+function in_rect(p, x, y, w, h) {
+    return (p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h);
 }
