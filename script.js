@@ -234,7 +234,7 @@ function setLabelFocus(label) {
     label.focus = in_rect(createVector(mouseX, mouseY), label.x, label.y, label.w, label.h);   
 }
 
-function mousePressed() {
+function mouseClicked() {
     handleInput();
 }
 
