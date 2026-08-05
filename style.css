@@ -26,6 +26,9 @@ canvas {
     min-height: 100dvh;
     cursor: pointer;      
     touch-action: none;
+    user-select: none;
+    -webkit-user-select: none; /* Safari still wants the prefix here too */
+    -webkit-touch-callout: none; /* also suppresses iOS's press-and-hold menu */
     z-index: 0; 
 }
 
