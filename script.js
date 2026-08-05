@@ -18,6 +18,7 @@ let waveStart;
 let waveAmplitude;
 
 let playing = false;
+let handlingClick = false;
 
 const bgCurveCount = 200;
 const fgCurveCount = 20;
@@ -26,6 +27,9 @@ const trackCount = 7;
 const wavePad = 15;  
 
 const audioContext = new AudioContext();
+
+window.visualViewport?.addEventListener('resize', syncCanvas);
+window.visualViewport?.addEventListener('scroll', syncCanvas);
 
 const tracks = {
     matmo: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/matmo.wav"),
@@ -198,7 +202,7 @@ function draw() {
     drawLabel(titles.listen, mainColor, 1, true, 5, 10, PI);
 
     Object.entries(labels).forEach(([_, label], i) => {   
-        label.focus = in_rect(createVector(mouseX, mouseY), label.x, label.y, label.w, label.h);   
+        setLabelFocus(label);
         const playing = track == label.track;
         const color = (label.focus || playing) ? highlightColor : mainColor;
         const weight = (label.focus || playing) ? 2 : 1;
@@ -224,32 +228,45 @@ function draw() {
 
 }
 
-async function mouseClicked() {   
-    curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
-    for (const [_, label] of Object.entries(labels)) {
-        if (label.focus) {
-            if (audioContext.state === 'suspended') {
-                await audioContext.resume();
-            }
-            if (playing) {
-                track.audio.pause();
-                track.audio.currentTime = 0;
-            }
+function setLabelFocus(label) {
+    label.focus = in_rect(createVector(mouseX, mouseY), label.x, label.y, label.w, label.h);   
+}
 
-            if (track != label.track) {
-                track = label.track;
-                try {
-                    await track.audio.play();
-                    playing = true;
-                } catch (err) {
-                    console.error('play failed:', err);
+async function mouseClicked() {   
+    if (handlingClick) return;
+    handlingClick = true;
+
+    try {
+        curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
+        for (const [_, label] of Object.entries(labels)) {
+            setLabelFocus(label);
+            if (label.focus) {
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
                 }
-            } else {
-                playing = false;
-                track = null;
+                if (playing) {
+                    track.audio.pause();
+                    track.audio.currentTime = 0;
+                }
+
+                if (track != label.track) {
+                    track = label.track;
+                    try {
+                        await track.audio.play();
+                        playing = true;
+                    } catch (err) {
+                        console.error('play failed:', err);
+                    }
+                } else {
+                    playing = false;
+                    track = null;
+                }
             }
         }
+    } finally {
+        handlingClick = false;
     }
+   
 }
 
 function windowResized() {    
@@ -258,6 +275,19 @@ function windowResized() {
     origin.y = height / 2;
     curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
     layout();
+}
+
+function syncCanvas() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    resizeCanvas(vv.width, vv.height);
+    origin.x = width / 2;
+    origin.y = height / 2;
+
+    const canvas = document.querySelector('canvas');
+    canvas.style.top = vv.offsetTop + 'px';
+    canvas.style.left = vv.offsetLeft + 'px';
 }
 
 function cardWidth() {  
