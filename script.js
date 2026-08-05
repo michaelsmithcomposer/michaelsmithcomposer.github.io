@@ -292,7 +292,8 @@ function syncCanvas() {
     origin.y = height / 2;
 
     const canvas = document.querySelector('canvas');
-    canvas.style.top = vv.offsetTop + 'px';
+    const offset = isIOS() ? 20 : 0;
+    canvas.style.top = vv.offsetTop - offset + 'px';
     canvas.style.left = vv.offsetLeft + 'px';
 
     console.log("sync");
@@ -301,6 +302,11 @@ function syncCanvas() {
 function cardWidth() {  
   const size = parseFloat(getComputedStyle(document.documentElement).fontSize);  
   return min(window.innerWidth * 0.9, 32 * size);
+}
+
+function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); 
 }
 
 
