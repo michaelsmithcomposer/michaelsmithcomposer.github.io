@@ -33,9 +33,7 @@ const tracks = {
     crop: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/crop%20circles.wav"),
     book: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/book.wav"),
     wax: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/waxWalkingHighlights.wav"),
-    sea: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/synthesizedSea.wav"),
-    ircurs: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/ircurs.wav"),
-    bloom: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/op%20bloom.wav"),
+    sea: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/synthesizedSea.wav"),  
     spark: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/spark.wav"),
 }
 
