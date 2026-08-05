@@ -50,7 +50,7 @@ let labels = {
     track2: {text: 'WAX WALKING', track: tracks.wax},
     track3: {text: 'SYNTHESIZED SEA', track: tracks.sea},   
     track6: {text: 'CLOUD TANK', track: tracks.spark},
-    track4: {text: 'BOOKMUSIC', track: tracks.book},
+    track4: {text: 'BOOK-MUSIC', track: tracks.book},
     track1: {text: 'PHYSICAL MEMORY', track: tracks.skee},
 }
 
@@ -81,7 +81,7 @@ function drawLabel(label, color, weight, reactive, amp, fft_amp, fft_angle) {
         beginShape();
         points.forEach(p => {
             if (reactive && playing) {
-                const a = map(track.samples[constrain(floor(map(p.x, 0, width * 2, 0, track.samples.length)), 0, track.samples.length)], 0, 255, -amp, amp);
+                const a = map(track.samples[constrain(floor(map(p.x, 0, width * 2.5, 0, track.samples.length)), 0, track.samples.length)], 0, 255, -amp, amp);
                 const fft_a = map(track.fft[constrain(floor(map(p.y, 0, height, 0, track.fft.length)), 0, track.fft.length)], 0, 255, -fft_amp, fft_amp);
                 const ox = cos(p.alpha - HALF_PI) * a + cos(fft_angle) * fft_a;
                 const oy = sin(p.alpha - HALF_PI) * a + sin(fft_angle) * fft_a;                            
@@ -204,7 +204,7 @@ function draw() {
         const playing = track == label.track;
         const color = (label.focus || playing) ? highlightColor : mainColor;
         const weight = (label.focus || playing) ? 2 : 1;
-        drawLabel(label, color, weight, playing, 6, 10, -PI / 4);        
+        drawLabel(label, color, weight, playing, 10, 10, -PI / 4);        
     });     
 
     stroke(mainColor)
