@@ -121,6 +121,7 @@ async function setup() {
     deansgate = await loadFont('fonts/deansgate.ttf');
     garamond = await loadFont('fonts/EBGaramond-Regular.ttf');
 
+    syncCanvas();
     layout();       
 
     curveTarget =  distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
@@ -128,6 +129,7 @@ async function setup() {
 
     setInterval(() => { perturb(curveTarget, floor(random(curveTarget.length - 3)), 50); }, 5);   
     
+   
 }
 
 function layout() {
@@ -288,6 +290,8 @@ function syncCanvas() {
     const canvas = document.querySelector('canvas');
     canvas.style.top = vv.offsetTop + 'px';
     canvas.style.left = vv.offsetLeft + 'px';
+
+    console.log("sync");
 }
 
 function cardWidth() {  
