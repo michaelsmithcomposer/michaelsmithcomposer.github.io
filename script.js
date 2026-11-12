@@ -26,13 +26,38 @@ const fgCurveCount = 20;
 const trackCount = 7;
 const wavePad = 15;  
 
+const DEBUG = new URLSearchParams(location.search).has('debug');  // add ?debug to the URL
+const GUTTER = 40;  // space to the left of the labels for the play buttons
+const canHover = matchMedia('(hover: hover)').matches;
+
+// ?debug: show the latest message in a box on screen (handy on a phone with no console)
+function debugLog(msg) {
+    console.log(msg);
+    if (!DEBUG) return;
+    let el = document.getElementById('dbg-log');
+    if (!el) {
+        el = Object.assign(document.createElement('div'), {
+            id: 'dbg-log',
+            style: 'position:fixed;left:4px;right:4px;top:24px;z-index:9;font:10px monospace;background:#fff;white-space:pre-wrap;word-break:break-all'
+        });
+        document.body.appendChild(el);
+    }
+    el.textContent = msg;
+}
+
+function audioReport(audio) {
+    const e = audio.error;
+    return `audio.error=${e ? e.code + ' ' + (e.message || '') : 'none'}  readyState=${audio.readyState}  networkState=${audio.networkState}\n` +
+           `src=${audio.currentSrc || audio.src}\norigin=${location.origin}  ctx=${audioContext.state}`;
+}
+
+// iOS: let Web Audio play even when the ringer/silent switch is on
+if (navigator.audioSession) navigator.audioSession.type = 'playback';
+
 const audioContext = new AudioContext();
 
-window.visualViewport?.addEventListener('resize', syncCanvas);
-window.visualViewport?.addEventListener('scroll', syncCanvas);
-
 const tracks = {
-    matmo: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/matmo.wav"),
+    zoe: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/zoe%20track.wav"),
     skee: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/skee2.wav"),
     crop: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/crop%20circles.wav"),
     book: setupAudio("https://pub-3cccac1bc30c4fa2a3ca1794a8def177.r2.dev/book.wav"),
@@ -47,7 +72,7 @@ let titles = {
 }
 
 let labels = {    
-    track5: {text: 'IMPULSE RESPONSE', track: tracks.matmo},   
+    track5: {text: 'ZOELCRO REEL', track: tracks.zoe},   
     track0: {text: 'CROP CIRCLES', track: tracks.crop},
     track2: {text: 'WAX WALKING', track: tracks.wax},
     track3: {text: 'SYNTHESIZED SEA', track: tracks.sea},   
@@ -56,26 +81,44 @@ let labels = {
     track1: {text: 'PHYSICAL MEMORY', track: tracks.skee},
 }
 
-function layoutLabel(label, x, y, w, h) {    
+function layoutLabel(label, x, y, w, h) {
+    textFont(deansgate);
     textSize(100);
-    textAlign(LEFT, TOP)   
+    textAlign(LEFT, TOP);
     label.paths = deansgate.textToContours(label.text, 0, 0, {sampleFactor: 0.25});
-    const size = getLabelSize(deansgate, label.text, w, h);
-    const ox = x + (w - size.w) / 2;
-    const oy = (h != null) ? y + (h - size.h) / 2 : y;
 
-    label.scale = size.scale;
-    label.x = ox;
+    // Measure the outlines themselves. textBounds() reports a tight box, but p5 places
+    // the contours using the font-level ascent, which can differ between browsers.
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    label.paths.forEach(points => points.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+    }));
+    const bw = maxX - minX;
+    const bh = maxY - minY;
+
+    const scale = min(w / bw, (h != null) ? h / bh : Infinity);
+    const sw = bw * scale;
+    const sh = bh * scale;
+    const ox = x + (w - sw) / 2;
+    const oy = (h != null) ? y + (h - sh) / 2 : y;
+
+    label.scale = scale;
+    label.drawX = ox - minX * scale;   // where drawLabel translates to
+    label.drawY = oy - minY * scale;
+    label.x = ox;                      // the visible box of the glyphs
     label.y = oy;
-    label.w = size.w;
-    label.h = size.h;
+    label.w = sw;
+    label.h = sh;
 
-    return {x: ox, y: oy, w: size.w, h: size.h};
+    return {x: ox, y: oy, w: sw, h: sh};
 }
 
 function drawLabel(label, color, weight, reactive, amp, fft_amp, fft_angle) {
     push();
-    translate(label.x, label.y);
+    translate(label.drawX, label.drawY);
     scale(label.scale);
     stroke(color);
     strokeWeight(weight / label.scale);
@@ -98,17 +141,6 @@ function drawLabel(label, color, weight, reactive, amp, fft_amp, fft_angle) {
     pop();
 }
 
-function getLabelSize(font, text, w, h = 999) {
-    textFont(font);
-    textAlign(LEFT, TOP);
-    textSize(100);    
-    const size = textBounds(text, 0, 0);
-    const scale_w = w / size.w;
-    const scale_h = h / size.h;
-    const scale = min(scale_w, scale_h);
-    return { scale: scale, w: size.w * scale, h: size.h * scale };
-}
-
 async function setup() {
     let canvas = createCanvas(windowWidth, windowHeight);     
     origin = createVector(width / 2, height / 2);
@@ -121,15 +153,30 @@ async function setup() {
     deansgate = await loadFont('fonts/deansgate.ttf');
     garamond = await loadFont('fonts/EBGaramond-Regular.ttf');
 
-    syncCanvas();
+    makeButtons();
     layout();       
 
     curveTarget =  distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
     curve = [...curveTarget];
 
     setInterval(() => { perturb(curveTarget, floor(random(curveTarget.length - 3)), 50); }, 5);   
-    
-   
+
+    // Re-run layout whenever a text card changes height (e.g. web font swaps in)
+    const relayout = () => layout();
+    new ResizeObserver(relayout).observe(document.querySelector('.text-block.top'));
+    new ResizeObserver(relayout).observe(document.querySelector('.text-block.bottom'));
+    document.fonts.ready.then(relayout);
+
+    if (DEBUG) {
+        const dbg = Object.assign(document.createElement('div'), {
+            style: 'position:fixed;left:4px;top:4px;z-index:9;font:10px monospace;background:#fff'
+        });
+        document.body.appendChild(dbg);
+        setInterval(() => {
+            const r = document.querySelector('canvas').getBoundingClientRect();
+            dbg.textContent = `css ${r.width|0}x${r.height|0}  buf ${width}x${height}  inner ${innerWidth}x${innerHeight}`;
+        }, 500);
+    }
 }
 
 function layout() {
@@ -152,8 +199,15 @@ function layout() {
     const rowH = (areaBottom - areaTop) / trackCount;
 
     Object.entries(labels).forEach(([_, label], i) => {       
-        layoutLabel(label, origin.x - cardWidth() / 2, areaTop + (rowH) * i, cardWidth(), rowH - gap);
-    });       
+        layoutLabel(
+            label,
+            origin.x - cardWidth() / 2 + GUTTER,
+            areaTop + rowH * i,
+            cardWidth() - GUTTER,
+            rowH - gap
+        );
+    });
+    positionButtons();
 
     waveEnd = createVector(titles.listen.x + titles.listen.w + wavePad, titles.listen.y + titles.listen.h / 2);
     waveStart = createVector(waveEnd.x + cardWidth() / 2 - wavePad * 3, waveEnd.y);
@@ -224,75 +278,92 @@ function draw() {
         endShape();
     } else {
         line(waveStart.x, waveStart.y, waveEnd.x, waveEnd.y);
-    }   
-   
-    
+    }      
 
+    if (DEBUG) drawDebug();
+}
+
+// ?debug: red = label boxes, blue = text cards
+function drawDebug() {
+    noFill();
+    strokeWeight(1);
+    stroke(255, 0, 0);
+    [titles.name, titles.listen, ...Object.values(labels)].forEach(l => rect(l.x, l.y, l.w, l.h));
+    stroke(0, 0, 255);
+    ['.text-block.top', '.text-block.bottom'].forEach(sel => {
+        const r = document.querySelector(sel).getBoundingClientRect();
+        rect(r.left, r.top, r.width, r.height);
+    });
 }
 
 function setLabelFocus(label) {
-    label.focus = in_rect(createVector(mouseX, mouseY), label.x, label.y, label.w, label.h);   
+    label.focus = canHover && in_rect(createVector(mouseX, mouseY), label.x, label.y, label.w, label.h);   
 }
 
+function makeButtons() {
+    Object.values(labels).forEach(label => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'play-btn';
+        b.textContent = '▶';
+        b.setAttribute('aria-label', `Play ${label.text}`);
+        b.addEventListener('click', () => toggleTrack(label));
+        document.body.appendChild(b);
+        label.button = b;
+    });
+}
 
-async function mouseClicked() {   
-    if (handlingClick) return;
-    handlingClick = true;
+function positionButtons() {
+    const left = origin.x - cardWidth() / 2;
+    Object.values(labels).forEach(l => {
+        l.button.style.left = `${left}px`;
+        l.button.style.top = `${l.y + l.h / 2}px`;
+    });
+}
 
-    try {
-        curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
-        for (const [_, label] of Object.entries(labels)) {
-            setLabelFocus(label);
-            if (label.focus) {
-                if (audioContext.state === 'suspended') {
-                    await audioContext.resume();
-                }
-                if (playing) {
-                    track.audio.pause();
-                    track.audio.currentTime = 0;
-                }
+function refreshButtons() {
+    Object.values(labels).forEach(l => {
+        l.button.textContent = (track === l.track) ? '■' : '▶';
+    });
+}
 
-                if (track != label.track) {
-                    track = label.track;
-                    try {
-                        await track.audio.play();
-                        playing = true;
-                    } catch (err) {
-                        console.error('play failed:', err);
-                    }
-                } else {
-                    playing = false;
-                    track = null;
-                }
-            }
-        }
-    } finally {
-        handlingClick = false;
+// Everything audio-related must start synchronously inside the tap (iOS)
+function toggleTrack(label) {
+    if (audioContext.state !== 'running') audioContext.resume();  // don't await
+
+    const next = label.track;
+    if (track) {
+        track.audio.pause();
+        track.audio.currentTime = 0;
     }
-   
+
+    if (track === next) {
+        track = null;
+        playing = false;
+    } else {
+        track = next;
+        playing = true;
+        // a media element that failed to load stays failed until load() is called again
+        if (next.audio.error) next.audio.load();
+        next.audio.play().catch(err => {
+            debugLog(`play failed: ${err.name}: ${err.message}\n` + audioReport(next.audio));
+            if (track === next) { track = null; playing = false; refreshButtons(); }
+        });
+    }
+    refreshButtons();
+}
+
+// Only reshuffles the curve. Button clicks bubble up to window, so they trigger this too.
+function mouseClicked() {
+    curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
 }
 
 function windowResized() {    
     resizeCanvas(windowWidth, windowHeight);
     origin.x = width / 2;
     origin.y = height / 2;
-    curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
     layout();
-}
-
-function syncCanvas() {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    resizeCanvas(vv.width, vv.height);
-    origin.x = width / 2;
-    origin.y = height / 2;
-
-    const canvas = document.querySelector('canvas');    
-    canvas.style.top = vv.offsetTop + 'px';
-    canvas.style.left = vv.offsetLeft + 'px';
-
-    console.log("sync");
+    curveTarget = distributePoints(bgCurveCount, fgCurveCount, 400, waveStart);
 }
 
 function cardWidth() {  
@@ -311,6 +382,7 @@ function setupAudio(url) {
     audio.crossOrigin = 'anonymous';
     audio.preload = 'none';
     audio.loop = 'true';
+    audio.addEventListener('error', () => debugLog('media error\n' + audioReport(audio)));
 
     const source = audioContext.createMediaElementSource(audio);
     const analyser = audioContext.createAnalyser();
@@ -394,8 +466,6 @@ function perturb(points, i, step) {
     }
     points[i] = next;    
 }
-
-
 
 function on_screen(p) {
     return (p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height);
